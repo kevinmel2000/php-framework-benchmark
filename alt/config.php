@@ -2,29 +2,29 @@
 
 return array (
     'app' => array(
-        'id' => '',
-        'name' => 'alt',
-        'environment' => 'development'
+        'id' => 'alt-php',
+        'name' => 'Alt PHP Framework',
+        'output' => 'html',
     ),
     'session' => array(
         'lifetime' => 43200,
     ),
-    'security' => array(
+    /*'security' => array(
         'algorithm' => MCRYPT_RIJNDAEL_128,
         'mode' => MCRYPT_MODE_CBC,
-        'key' => 'u/Gu5posvwDsXUnV5Zaq4g==',
-        'iv' => '5D9r9ZVzEYYgha93/aUK2w==',
-    ),
-    'database' => array(
+        'key' => 'u/Gu5posvwDsXUnV',
+        'iv' => '5D9r9ZVzEYYgha93',
+    ),*/
+    /*'database' => array(
         'default' => array (
             'type'       => 'Mysql',
             'connection' => array(
                 'hostname'   => 'localhost',
                 'username'   => 'root',
-                'password'   => '',
+                'password'   => 'w2e3r4',
                 'persistent' => FALSE,
-                'database'   => 'alt-php',
+                'database'   => 'academy-altphp-intro',
             )
         ),
-    ),
+    ),*/
 );

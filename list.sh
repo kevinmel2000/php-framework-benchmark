@@ -4,9 +4,11 @@ list="
 no-framework
 alt
 phalcon-2.0
+tipsy-0.10
+ci-3.0
+leaf
 silex-1.3
 symfony-2.7
-tipsy-0.10
 laravel-5.1
 zf-2.5
 

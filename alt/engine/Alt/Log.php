@@ -10,7 +10,7 @@ class Alt_Log {
     public static $level    = self::LEVEL_ERROR;
 
     public static function write($level, $message){
-        $time = mktime();
+        $time = time();
         $dir  = 'log' . DIRECTORY_SEPARATOR;
         $file = $dir . date('Ymd', $time) . '.txt';
 

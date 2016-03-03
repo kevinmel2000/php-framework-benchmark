@@ -24,28 +24,13 @@ class Alt {
     // output type
     const OUTPUT_HTML               = 'html';
     const OUTPUT_JSON               = 'json';
-    const OUTPUT_TEXT               = 'plain';
     const OUTPUT_XML                = 'xml';
     public static $outputs          = array(
         self::OUTPUT_JSON           => 'application/',
         self::OUTPUT_XML            => 'application/',
-        self::OUTPUT_TEXT           => 'text/',
         self::OUTPUT_HTML           => 'text/',
     );
     public static $output           = self::OUTPUT_JSON;
-
-    // request method
-    const GET                       = 'get';
-    const POST                      = 'post';
-    const PUT                       = 'put';
-    const DELETE                    = 'delete';
-    public static $method           = self::GET;
-    public static $methods          = array(
-        self::PUT                   => 'create',
-        self::GET                   => 'retrieve',
-        self::POST                  => 'update',
-        self::DELETE                => 'delete',
-    );
 
     // response status
     const STATUS_OK                 = '200';
@@ -61,16 +46,10 @@ class Alt {
         self::STATUS_ERROR          => 'ERROR',
     );
 
-    // routes
-    public static $routes           = array();
-
     // profiler
     public static $timestart        = 0;
     public static $timestop         = 0;
     public static $config           = array();
-
-    // security
-    public static $secure           = true;
 
     /**
      * Start Alt application
@@ -92,7 +71,7 @@ class Alt {
         Alt_Log::$level = $options['loglevel'] ? $options['loglevel'] : (self::$config['app']['loglevel'] ? self::$config['app']['loglevel'] : (self::$environment == self::ENV_PRODUCTION ? Alt_Log::LEVEL_ERROR : Alt_Log::LEVEL_LOG));
 
         // set default output
-        self::$output = $options['output'] ? $options['output'] : self::$output;
+        self::$output = $options['output'] ? $options['output'] : (self::$config['app']['output'] ? self::$config['app']['output'] : self::$output);
 
         // can be used as a web app or command line
         switch(PHP_SAPI){
@@ -106,16 +85,9 @@ class Alt {
                         case '--uri':
                             $_SERVER['REQUEST_URI'] = strtolower($value);
                             break;
-                        case '--method':
-                            $_SERVER['REQUEST_METHOD'] = strtolower($value);
-                            break;
                         default:
+                            $_REQUEST[$key] = $value;
                             break;
-                    }
-                    if($key == '--uri'){
-
-                    }else{
-                        $_REQUEST[$key] = $value;
                     }
                 }
                 $_SERVER['REQUEST_URI'] = $_SERVER['REQUEST_URI'] ? $_SERVER['REQUEST_URI'] : "";
@@ -134,10 +106,6 @@ class Alt {
                 if (isset($matches[1])) $_REQUEST['token'] = $matches[1];
             }
         }
-
-        // set request method
-        $_SERVER['REQUEST_METHOD'] = isset(self::$methods[strtolower($_REQUEST['method'])]) ? strtolower($_REQUEST['method']) : $_SERVER['REQUEST_METHOD'];
-        self::$method = self::$methods[isset(self::$methods[$_SERVER['REQUEST_METHOD']]) ? $_SERVER['REQUEST_METHOD'] : self::GET];
 
         // get routing and output type
         $uri = substr($_SERVER['REQUEST_URI'], strlen($baseurl)) ? substr($_SERVER['REQUEST_URI'], strlen($baseurl)) : "";
@@ -164,18 +132,13 @@ class Alt {
             ob_start();
             $res = (include_once $controller);
 
-            switch(self::$output){
-                case self::OUTPUT_HTML:
-                default:
-                    $res = ob_get_contents() ? ob_get_contents() : $res;
-                    ob_end_clean();
+            $res = ob_get_contents() ? ob_get_contents() : $res;
+            ob_end_clean();
 
-                    self::response(array(
-                        's' => self::STATUS_OK,
-                        'd' => $res,
-                    ));
-                    break;
-            }
+            self::response(array(
+                's' => self::STATUS_OK,
+                'd' => $res,
+            ));
         }catch(Alt_Exception $e){
             self::response(array(
                 's' => $e->getCode(),
@@ -187,27 +150,6 @@ class Alt {
                 'm' => self::$environment == Alt::ENV_DEVELOPMENT ? $e->getCode() . " : " . $e->getMessage() : self::$status[self::STATUS_ERROR],
             ));
         }
-    }
-
-    /**
-     * Useful in stop the application and do the debugging while displaying time and memory usage
-     * @param null $data
-     * @param bool $isdie
-     */
-    public static function stop($data = null, $isdie = true){
-        var_dump(array(
-            'd' => $data,
-            't' => round(microtime(true) - self::$timestart, 6),
-            'u' => memory_get_peak_usage(true) / 1000,
-        ));
-        if($isdie) die;
-    }
-
-    public static function route($route, $function, $method = null){
-        self::$routes[$route] = array(
-            'classname'     => $function,
-            'method'        => $method,
-        );
     }
 
     public static function autoload($class){
@@ -225,9 +167,6 @@ class Alt {
     public static function response($output = array(), $options = array()){
         header('Content-type: ' . self::$outputs[self::$output] . self::$output);
 
-        // flag is always surpress http status to 200
-        $options['issurpress']  = isset($options['issurpress']) ? $options['issurpress'] : (isset($_REQUEST['issurpress']) ? $_REQUEST['issurpress'] : false);
-
         // flag is only return data, not with status
         $options['ismini']      = isset($options['ismini']) ? $options['ismini'] : (isset($_REQUEST['ismini']) ? $_REQUEST['ismini'] : self::$environment == self::ENV_PRODUCTION);
 
@@ -242,21 +181,6 @@ class Alt {
             default:
                 $output = $options['ismini'] && $output['s'] == self::STATUS_OK ? $output['d'] : $output;
                 $output = json_encode($output);
-
-                if(Alt::$environment == Alt::ENV_PRODUCTION && Alt::$secure)
-                    $output = Alt_Security::encrypt($output, Alt::$config['security']);
-
-                header('Content-length: ' . strlen($output));
-                echo $output;
-                break;
-            case self::OUTPUT_TEXT:
-                $output = $options['ismini'] && $output['s'] == self::STATUS_OK ? $output['d'] : $output;
-
-                if(Alt::$environment == Alt::ENV_PRODUCTION && Alt::$secure)
-                    $output = Alt_Security::encrypt($output, Alt::$config['security']);
-
-                header('Content-length: ' . strlen($output));
-                echo $output;
                 break;
             case self::OUTPUT_XML:
                 $text = $options['ismini'] && $output['s'] == self::STATUS_OK ? $output['d'] : $output;
@@ -264,23 +188,17 @@ class Alt {
                 $output .= '<xml>';
                 $output .= self::xml_encode($text);
                 $output .= '</xml>';
-
-                if(Alt::$environment == Alt::ENV_PRODUCTION && Alt::$secure)
-                    $output = Alt_Security::encrypt($output, Alt::$config['security']);
-
-                header('Content-length: ' . strlen($output));
-                echo $output;
                 break;
             case self::OUTPUT_HTML:
                 $output = $output['s'] == Alt::STATUS_OK ? $output['d'] : $output['m'];
-
-                if(Alt::$environment == Alt::ENV_PRODUCTION && Alt::$secure)
-                    $output = Alt_Security::encrypt($output, Alt::$config['security']);
-
-                header('Content-length: ' . strlen($output));
-                echo $output;
                 break;
         }
+
+        if(Alt::$environment == Alt::ENV_PRODUCTION && Alt::$config['security'])
+            $output = Alt_Security::encrypt($output, Alt::$config['security']);
+
+        header('Content-length: ' . strlen($output));
+        echo $output;
     }
 
     public static function xml_encode($data){

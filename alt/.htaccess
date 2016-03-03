@@ -22,4 +22,20 @@ RewriteCond %{THE_REQUEST} \s/public/ [NC,OR]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php?$0 [PT,L,QSA]
 
+# Set php flag and value
 php_flag opcache.enable Off
+php_flag xdebug.default_enable Off
+php_flag xdebug.overload_var_dump Off
+php_flag xdebug.show_exception_trace Off
+php_value xdebug.trace_format 1
+
+# Compress response with gzip
+<IfModule mod_deflate.c>
+    #apache2.4.6
+    <filesMatch "\.(js|css|json|xml|txt|html|php)$">
+        SetOutputFilter DEFLATE
+    </filesMatch>
+    #apache2.2
+    #SetOutputFilter DEFLATE
+    #AddOutputFilterByType DEFLATE text/text text/html text/plain text/xml text/css application/x-javascript application/javascript application/json
+</IfModule>

@@ -1,2 +1,2 @@
-# alt-php
-Alt Backend Server Framework using PHP
+# academy-altphp-intro
+Akhdani Academy - Alt-PHP Intro
